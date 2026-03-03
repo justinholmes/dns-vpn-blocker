@@ -1,0 +1,7 @@
+target/
+.idea/
+.cargo/
+blocked_ips.db
+*.py
+uv.lock
+pyproject.toml

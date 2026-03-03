@@ -1,0 +1,12 @@
+[package]
+name = "vpn-blocker-ebpf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aya-ebpf = { git = "https://github.com/aya-rs/aya" }
+network-types = "0.0.7"
+
+[[bin]]
+name = "vpn-blocker-ebpf"
+path = "src/main.rs"

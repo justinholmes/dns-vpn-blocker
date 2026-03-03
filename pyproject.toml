@@ -1,0 +1,14 @@
+[project]
+name = "vpn-blocker"
+version = "0.1.0"
+description = "VPN/DNS Blocker — ML model training script"
+requires-python = ">=3.10"
+dependencies = [
+    "scikit-learn",
+    "xgboost",
+    "lightgbm",
+    "skl2onnx",
+    "onnxmltools",
+    "onnxruntime",
+    "numpy",
+]

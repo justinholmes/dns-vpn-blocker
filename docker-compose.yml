@@ -1,0 +1,72 @@
+services:
+  vpn-dns-blocker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: vpn-dns-blocker:latest
+    container_name: vpn-dns-blocker
+
+    # XDP attaches to the host kernel's network driver — must use host network
+    # and elevated privileges to load eBPF programs and modify iptables.
+    network_mode: host
+    privileged: true
+
+    # Interface to monitor — change to match your LAN-facing interface
+    command: ["eth1"]
+
+    working_dir: /app
+    volumes:
+      # Persist the SQLite block database across restarts
+      - vpn_db:/app
+
+    environment:
+      - RUST_LOG=info
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/api/stats"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── BGP VIP HA sidecar ──────────────────────────────────────────────────────
+  # Only started when the "ha" profile is active:
+  #   docker compose --env-file ha/.env.gw1 --profile ha up -d
+  bird2:
+    profiles: ["ha"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: bird2
+    image: vpn-dns-blocker-bird2:latest
+    container_name: vpn-dns-blocker-bird2
+
+    # BIRD2 must see the same network stack as the host to announce the VIP
+    network_mode: host
+    privileged: true
+
+    # Required variables — supply via --env-file ha/.env.gw1 (or .env.gw2)
+    environment:
+      - NODE_IP=${NODE_IP}
+      - VIP=${VIP:-192.168.1.254}
+      - BGP_UPSTREAM_IP=${BGP_UPSTREAM_IP}
+      - BGP_UPSTREAM_AS=${BGP_UPSTREAM_AS}
+      - BGP_LOCAL_AS=${BGP_LOCAL_AS:-65001}
+      - LAN_IFACE=${LAN_IFACE:-eth1}
+      # Poll the local vpn-dns-blocker health endpoint
+      - HEALTH_URL=http://localhost:8080/api/stats
+      - HEALTH_INTERVAL=${HEALTH_INTERVAL:-3}
+      - FAILOVER_THRESH=${FAILOVER_THRESH:-2}
+
+    depends_on:
+      vpn-dns-blocker:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+volumes:
+  vpn_db:
+    driver: local
