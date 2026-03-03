@@ -2,6 +2,8 @@
 
 A high-performance gateway-level VPN and DNS blocker built in Rust. Combines XDP eBPF packet filtering, TLS fingerprinting, DNS sinkholing, and an ONNX ML model to detect and block VPN traffic at the network edge — before connections complete.
 
+Useful to put in front of openclaw based VMs or to block kids on another vlan.
+
 ---
 
 ## How It Works
